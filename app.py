@@ -2,42 +2,31 @@ import streamlit as st
 import cohere
 import os
 
-# Use environment variable for secure API key access
+# Initialize Cohere client using the environment variable
 co = cohere.Client(os.environ["COHERE_API_KEY"])
 
-st.set_page_config(page_title="RoleProjector", page_icon="🧠")
+# Streamlit app title
+st.title("RoleProjector: Generate Project Ideas from Job Descriptions")
 
-st.title("🤖 RoleProjector")
-st.markdown("Turn job descriptions into custom project ideas for your portfolio.")
+# Text input
+job_description = st.text_area("Paste a Job Description:", height=250)
 
-job_desc = st.text_area("🔍 Paste a job description below:")
-
-if st.button("🚀 Generate Project Idea"):
-    if not job_desc.strip():
-        st.warning("Please paste a job description first.")
+# Submit button
+if st.button("Generate Project Ideas"):
+    if job_description.strip() == "":
+        st.warning("Please enter a job description.")
     else:
-        with st.spinner("Thinking... generating ideas..."):
-            prompt = f"""
-You are an AI that helps job seekers create custom portfolio projects based on job descriptions.
+        try:
+            response = co.generate(
+                model='command',  # ✅ Correct model for generate API
+                prompt=f"Based on the following job description, suggest 3 simple project ideas:\n\n{job_description}\n\nProject Ideas:",
+                max_tokens=150,
+                temperature=0.7
+            )
 
-Here is the job description:
-{job_desc}
+            # Display result
+            st.subheader("Project Ideas")
+            st.write(response.generations[0].text.strip())
 
-Suggest 1–2 project ideas that:
-- Match the required skills
-- Can be built in 2–3 weeks
-- Are tailored to data-related roles like data analyst, data scientist, data engineer, or business analyst
-Include: project title, tools used, and what each project demonstrates.
-"""
-            try:
-                response = co.generate(
-                    model='command-r',
-                    prompt=prompt,
-                    max_tokens=300,
-                    temperature=0.8
-                )
-                result = response.generations[0].text.strip()
-                st.success("Here's your custom project idea:")
-                st.markdown(result)
-            except Exception as e:
-                st.error(f"Something went wrong: {e}")
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
